@@ -1,0 +1,110 @@
+1.
+with cte as 
+(select customerid,month,year,datausedgb 
+from customerusage 
+where month='March' and year=2024)
+
+select customerid from cte
+where datausedgb>
+(select avg(datausedgb) from cte);
+
+2.
+
+select customerid from (
+
+select customerid,sum((select CallDuration customerinteractions where month='February')) as feb_call,
+		 sum((select CallDuration customerinteractions where month='March')) as Mar_call
+ from customerinteractions
+ group by customerid) as sub1
+ where mar_call>feb_call
+;
+
+3.select customerid from (
+
+select customerid,sum((select MessageCount customerinteractions where month='February')) as feb_msg,
+					sum((select MessageCount customerinteractions where month='March')) as Mar_msg,
+                    sum((select DataUsed customerinteractions where month='February')) as feb_data,
+					sum((select DataUsed customerinteractions where month='March')) as Mar_data
+ 
+ from customerinteractions
+ group by customerid
+ ) as sub1
+where feb_data< Mar_data and feb_msg>Mar_msg;
+
+
+
+
+4. 
+select producttypeid,sum(totalsalesamount) as total from quarterlysales
+group by producttypeid
+order by total desc;
+
+
+5.
+
+select producttypeid,sum(UnitsSold) total_unit_sold,sum(totalsalesamount) as total from quarterlysales
+where quarter='Q1'
+group by producttypeid
+order by total desc;
+
+6.
+
+select producttypeid,(sum(totalsalesamount)/sum(UnitsSold) ) as avg_price_per_unit from quarterlysales
+where quarter='Q2' and year=2024 and producttypeid=1
+group by producttypeid
+;
+
+
+7.
+with cte as (
+select * from sectorenergyconsumption
+where EnergySource= 'Solar' or 'Wind' and (year =2024 and month='March')
+)
+
+select region from cte
+where ConsumptionKWh>(select avg(ConsumptionKWh) from cte);
+
+8.
+
+
+with cte as 
+(select sector , 
+(select ConsumptionKWh sectorenergyconsumption where month='March' ) as march_com,
+(select (ConsumptionKWh)  sectorenergyconsumption where month='February' ) as feb_com
+from sectorenergyconsumption
+)
+
+select sector,sum(march_com) as a,sum(feb_com) as b from   cte
+
+group by sector
+;
+
+9.
+
+
+10.
+
+select customername,sum(ClaimsCount) from insuranceactivities
+group by customername
+order by sum(ClaimsCount) desc
+limit 1;
+
+11.
+
+select sum(AnnualPremium) from insuranceactivities
+where Investigation='No' and 
+claimscount>=1 
+and FeedbackScore>=5;
+
+
+12.
+
+select avg(FeedbackScore) ,
+case 
+  when ClaimsCount>2 then "Satisfied"
+  else "NOt"
+  end as score
+  from insuranceactivities
+group by PolicyType
+
+
