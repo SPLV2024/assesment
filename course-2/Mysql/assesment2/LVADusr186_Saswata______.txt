@@ -1,0 +1,128 @@
+1.
+
+select machine_id,cost from l1_maintenance_records
+where month(maintenance_date)=3 and 
+cost>(select avg(cost) from l1_maintenance_records where month(maintenance_date)=3) ;
+
+2.
+
+select maintenance_type,count(maintenance_type) as maintenance_type_ from l1_maintenance_records
+where month(maintenance_date)=3
+group by maintenance_type ;
+
+
+3.
+
+
+select technician_name,count(maintenance_id) as total_maintenance_,avg(cost) as Avg_cost_per_m from l1_maintenance_records
+where month(maintenance_date)=3
+group by technician_name 
+order by count(maintenance_id) desc,avg(cost) desc
+limit 1;
+
+
+4.
+
+select concat(((avg(incident_count_pre_update)- avg(incident_count_post_update))*100/avg(incident_count_pre_update)),'%') as avg_reduction_rate 
+from asses_2.l2_updates;
+
+5.
+
+select update_id,user_feedback_score from asses_2.l2_updates
+order by user_feedback_score desc
+limit 1;
+
+
+
+6.
+
+select product_id,incident_count_pre_update,incident_count_post_update, 
+(incident_count_post_update/incident_count_pre_update) as ratio_of_improvement from asses_2.l2_updates
+order by ratio_of_improvement desc
+limit 1;
+
+Product_id 100 required improvemets as the (incident_count_post_update/incident_count_pre_update) as ratio_of_improvement
+
+comes less for the product as it was the inital product the value may be low thereafter values decreases.
+
+
+
+7.
+
+create view overall_report as
+
+SELECT p.patient_name,v.facility_id,v.reason_for_visit ,t.outcome FROM asses_2.l3_patients p
+inner join  asses_2.l3_visits v on p.patient_id=v.patient_id
+inner join asses_2.l3_treatments t on v.visit_id=t.visit_id
+where month(v.visit_date)=3;
+
+
+8.
+
+SELECT f.facility_id,f.facility_name,count(v.visit_id) as total_visit FROM asses_2.l3_visits v
+inner join  asses_2.l3_facilities f on v.facility_id=f.facility_id
+where month(v.visit_date)=3 and reason_for_visit='Emergency'
+group by f.facility_id,f.facility_name
+;
+
+
+9.
+
+SELECT  p.insurance_provider , t.outcome,count(t.outcome) as outcome FROM asses_2.l3_patients p
+inner join  asses_2.l3_visits v on p.patient_id=v.patient_id
+inner join asses_2.l3_treatments t on v.visit_id=t.visit_id
+where quarter(v.visit_date)=1 and t.outcome='Complicated'
+group by p.insurance_provider , t.outcome
+order by count(t.outcome)  desc;
+
+
+
+
+10.
+
+
+
+with cte as 
+(select quantity ,
+(select  product_name from  asses_2.l4_products where product_id= asses_2.l4_sales.product_id ) as product_name,
+(select  category from  asses_2.l4_products where product_id= asses_2.l4_sales.product_id ) as product_cat
+from asses_2.l4_sales 
+where month(sales_date)=3)
+
+select product_name,product_cat,sum(quantity) as total from cte
+group by product_name,product_cat
+order by  sum(quantity) desc
+limit 1;
+
+
+
+
+11.
+
+
+
+
+create view best_region_sales as 
+select region, sum(p.price*s1.quantity) as total_sales from asses_2.l4_sales s1
+inner join asses_2.l4_stores s2 on s1.store_id=s2.store_id
+inner join asses_2.l4_products p on s1.product_id=p.product_id 
+where quarter(s1.sale_date)=1
+group by s2.region
+order by sum(p.price*s1.quantity) desc
+limit 1;
+
+12.
+
+
+SELECT s1.product_id,s2.region FROM asses_2.l4_sales s1
+left join asses_2.l4_stores s2  on s1.store_id=s2.store_id
+union 
+SELECT s1.product_id,s2.region FROM asses_2.l4_stores s2 
+left join asses_2.l4_sales s1   on s1.store_id=s2.store_id
+; 
+
+
+
+
+
+
