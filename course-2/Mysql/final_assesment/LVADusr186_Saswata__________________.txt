@@ -1,0 +1,238 @@
+1.
+
+with cte as (select p.product_category,s.sales_amount from fa_sql.products p
+inner join fa_sql.sales_records s on p.product_id=s.product_id  
+where  DATE_SUB(current_date(),INTERVAL -30 DAY))
+
+select product_category , avg(sales_amount) as avgsales from cte
+group by product_category
+;
+
+2.
+
+with cte as (select p.product_category,p.product_name,s.sales_amount,year(s.sales_date) from fa_sql.products p
+inner join fa_sql.sales_records s on p.product_id=s.product_id  
+where year(s.sales_date)=year(current_date())
+)
+(select product_name,sum(sales_amount),
+ rank() over(order by sum(sales_amount)  desc) as rn   
+from cte
+group by product_name
+limit 3) 
+
+;
+
+3.
+
+with cte as (select c.customer_id,c.customer_name,sum(s.sales_amount) as total from fa_sql.products p
+inner join fa_sql.sales_records s on p.product_id=s.product_id 
+inner join customers c on s.customer_id=c.customer_id
+group by  c.customer_id,c.customer_name)
+
+select customer_id,customer_name,total, rank() over(order by total desc)  from cte;
+
+
+
+4.
+
+with cte as (select c.customer_name,s.sales_date from fa_sql.customers c
+				inner join fa_sql.sales_records s on c.customer_id=s.customer_id
+                where DATE_SUB(CURDATE(),INTERVAL -6 month))
+
+
+select customer_name ,
+case
+		when count(customer_name)>=4 then "Consistent"
+        else "ocassional"
+        end as segment
+
+  from cte
+  group by customer_name;
+
+
+
+5.
+
+
+
+with cte as (select f.departure_airport,f.arrival_airport,t.ticket_price from fa_sql.flights f
+inner join fa_sql.tickets t on  f.flight_id=t.flight_id)
+-- select * from cte;
+select concat(departure_airport,'-',arrival_airport) as route ,avg(ticket_price) as avg_ticket_price from cte 
+group by route
+
+; 
+
+
+6..
+
+
+with cte as (select f.flight_id,f.flight_number,t.ticket_id,f.departure_date from fa_sql.flights f
+inner join fa_sql.tickets t on  f.flight_id=t.flight_id
+where  DATE_SUB(CURDATE(),INTERVAL -30 day))
+select flight_number,count(ticket_id) as ticket_sold,departure_date from cte
+group by flight_number,flight_id;
+
+
+
+7.
+
+with cte as (select p.passenger_id,p.passenger_name,p.frequent_flyer_status,t.ticket_price from fa_sql.passengers p
+inner join fa_sql.tickets t on  p.passenger_id=t.passenger_id
+)
+select passenger_name, frequent_flyer_status,sum(ticket_price) as total_price from cte
+group by passenger_id,passenger_name
+order by sum(ticket_price) desc;
+
+
+8.
+
+
+with cte as (select f.flight_id,f.flight_number,t.ticket_id,t.ticket_date from fa_sql.flights f
+inner join fa_sql.tickets t on  f.flight_id=t.flight_id
+)
+
+select month(ticket_date) as month , count(ticket_id) as total from cte
+group by month;
+
+
+
+
+
+9.
+
+with cte as (select p.player_id,p.player_name,p.registration_date,s.score_id,s.game_id,s.score,s.play_date,g.game_genre from fa_sql.players p 
+inner join fa_sql.playerscores s on p.player_id=s.player_id
+inner join games g on g.game_id=s.game_id) 
+
+select player_name,game_genre,avg(timestampdiff(play_date,current_time)) as avg_times_played from cte
+group by player_name,game_genre;
+
+
+10.
+
+with cte as (select p.player_id,p.player_name,p.registration_date,s.score_id,s.game_id,s.score,s.play_date,g.game_genre,g.game_name from fa_sql.players p 
+inner join fa_sql.playerscores s on p.player_id=s.player_id
+inner join games g on g.game_id=s.game_id) 
+select game_name,count(player_id) as total from cte
+group by game_name
+order by count(player_id) desc
+limit 3 ;
+
+
+11.
+with cte as (select p.player_id,p.player_name,p.registration_date,s.score_id,s.game_id,s.score,s.play_date,g.game_genre,g.game_name from fa_sql.players p 
+inner join fa_sql.playerscores s on p.player_id=s.player_id
+inner join games g on g.game_id=s.game_id) 
+select game_name, max(score),avg(score),count(player_id) as total from cte
+group by game_name
+order by count(player_id) desc
+limit 3 ;
+
+12.
+
+
+
+
+with cte as (select p.player_id,p.player_name,p.registration_date,s.score_id,s.game_id,s.score,s.play_date,g.game_genre,g.game_name from fa_sql.players p 
+inner join fa_sql.playerscores s on p.player_id=s.player_id
+inner join games g on g.game_id=s.game_id
+where max(s.play_date)< DATE_SUB(CURDATE(),INTERVAL -30 day)
+group by p.player_id,p.player_name)
+ 
+select p.player_id,p.player_name,registration_date from cte;
+
+
+
+
+13.
+
+
+with cte as(select d.doctor_id,d.doctor_name, t.cost from doctors d
+inner join fa_sql.treatments t on d.doctor_id=t.doctor_id
+)
+
+select doctor_id,doctor_name,sum(cost) from cte 
+group by doctor_id,doctor_name
+order by sum(cost) desc
+limit 5;
+
+
+14.
+
+select treatment_name,sum(cost) as total from fa_sql.treatments
+group by treatment_name
+order by sum(cost) desc;
+
+
+
+
+
+15.
+select patient_id,patient_name ,admission_date,discharge_date from fa_sql.patients
+where datediff(admission_date,discharge_date) <=30;
+
+
+
+16.
+
+
+select gender,diagnosis, round(avg(datediff(discharge_date,admission_date))) as days from fa_sql.patients
+group by gender,diagnosis;
+
+
+
+
+17.
+
+
+select c.department, e.semester, avg(e.grade) as avg_grade from  fa_sql.enrollments e
+inner join fa_sql.courses c on e.course_id=c.course_id
+group by c.department, e.semester
+order by c.department, e.semester;
+
+
+
+18.
+
+
+with cte as (select s.student_id,  s.major,s.enrollment_year from  fa_sql.enrollments e
+inner join fa_sql.courses c on e.course_id=c.course_id
+inner join fa_sql.students s on e.student_id=s.student_id
+)
+
+select major,enrollment_year,count(student_id) from cte
+group by major,enrollment_year 
+order by count(student_id) desc;
+
+
+
+19.
+
+
+with cte as (select s.student_id,  s.student_name,e.semester,e.grade from  fa_sql.enrollments e
+inner join fa_sql.courses c on e.course_id=c.course_id
+inner join fa_sql.students s on e.student_id=s.student_id
+)
+select student_id, student_name , semester, sum(grade) from cte
+group by student_id, student_name,semester
+having sum(grade)>50;
+
+
+
+20.
+
+
+with cte as (select s.enrollment_year,c.course_name,s.student_id from  fa_sql.enrollments e
+inner join fa_sql.courses c on e.course_id=c.course_id
+inner join fa_sql.students s on e.student_id=s.student_id
+)
+
+select enrollment_year,course_name,count(student_id) from cte
+where enrollment_year between year(current_date) and year(current_date)-5
+group by enrollment_year,course_name;
+
+
+
+
+
